@@ -10,6 +10,24 @@ app.use(express.json());
 
 const users = [];
 
+// Middleware para verificar a existência do todo
+function checksExistsTodos(request, response, next) {
+  const { id } = request.params;
+  const { todos } = request.user;
+  if (todos.length) {
+    const specificTodo = todos.find((todo) => todo.id === id);
+    todos.forEach((todo) => {
+      if (todo.id !== id) {
+        return response.status(404).json({ error: "Esse todo não existe!" });
+      }
+      request.todo = specificTodo;
+      return next();
+    });
+  } else {
+    return response.status(400).json({ error: "Não há nenhum todo!" })
+  }
+}
+
 function checksExistsUserAccount(request, response, next) {
   const { username } = request.headers;
   const user = users.find((user) => user.username === username);
@@ -54,54 +72,25 @@ app.post('/todos', checksExistsUserAccount, (request, response) => {
   return response.status(201).json(todos);
 });
 
-app.put('/todos/:id', checksExistsUserAccount, (request, response) => {
-  const { id } = request.params;
-  const { todos } = request.user;
+app.put('/todos/:id', checksExistsUserAccount, checksExistsTodos, (request, response) => {
+  const { todo } = request;
   const { title, deadline } = request.body;
-  if (todos.length) {
-    todos.forEach((todo) => {
-      if (todo.id !== id) {
-        return response.status(404).json({ error: "Esse todo não existe!" });
-      }
-      todo.title = title;
-      todo.deadline = deadline;
-      return response.status(201).json(todo);
-    });
-  } else {
-    return response.status(400).json({ error: "Não há nenhum todo!" })
-  }
+  todo.title = title;
+  todo.deadline = deadline;
+  return response.status(201).json(todo);
 });
 
-app.patch('/todos/:id/done', checksExistsUserAccount, (request, response) => {
-  const { id } = request.params;
-  const { todos } = request.user;
-  if (todos.length) {
-    todos.forEach((todo) => {
-      if (todo.id !== id) {
-        return response.status(404).json({ error: "Esse todo não existe!" });
-      }
-      todo.done = true;
-      return response.status(201).json(todo);
-    });
-  } else {
-    return response.status(400).json({ error: "Não há nenhum todo!" })
-  }
+app.patch('/todos/:id/done', checksExistsUserAccount, checksExistsTodos, (request, response) => {
+  const { todo } = request;
+  todo.done = true;
+  return response.status(201).json(todo);
 });
 
-app.delete('/todos/:id', checksExistsUserAccount, (request, response) => {
-  const { id } = request.params;
+app.delete('/todos/:id', checksExistsUserAccount, checksExistsTodos, (request, response) => {
+  const { todo } = request;
   const { todos } = request.user;
-  if (todos.length) {
-    todos.forEach((todo) => {
-      if (todo.id !== id) {
-        return response.status(404).json({ error: "Esse todo não existe!" });
-      }
-      todos.splice(todo, 1);
-      return response.status(204).send();
-    });
-  } else {
-    return response.status(400).json({ error: "Não há nenhum todo!" })
-  }
+  todos.splice(todo, 1);
+  return response.status(204).send();
 });
 
 module.exports = app;
