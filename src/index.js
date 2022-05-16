@@ -18,8 +18,11 @@ function checksExistsUserAccount(request, response, next) {
   }
   request.user = user;
   return next();
-
 }
+
+app.get('/users', (request, response)=> {
+  return response.json(users);
+})
 
 app.post('/users', (request, response) => {
   const { name, username } = request.body;
@@ -53,6 +56,13 @@ app.post('/todos', checksExistsUserAccount, (request, response) => {
     created_at: new Date()
   };
   user.todos.push(todo);
+  return response.status(201).json(todo);
+});
+
+app.get('/todos/:id', checksExistsUserAccount, (request, response) => {
+  const { user } = request;
+  const { id } = request.params;
+  const todo = user.todos.find(todo=>todo.id === id)
   return response.status(201).json(todo);
 });
 
