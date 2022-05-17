@@ -1,0 +1,54 @@
+service: users
+frameworkVersion: '^3.17.0'
+provider: aws
+
+functions:
+  createTodo:
+    handler: src/functions/createTodo.handler
+    events:
+      - httpApi:
+          path: /todos/{userid}
+          method: post
+  listTodos:
+    handler: src/functions/listTodos.handler
+    events:
+      - httpApi:
+          path: /todos/{userid}
+          method: get
+
+custom:
+  dynamodb:
+    stages:
+      - dev
+
+resources:
+  Resources:
+    todosTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: todosdb
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: user_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        GlobalSecondaryIndexes:
+          - IndexName: usersIdIndex
+            KeySchema:
+              - AttributeName: user_id
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1
+
+plugins:
+  - serverless-dynamodb-local
+  - serverless-offline
